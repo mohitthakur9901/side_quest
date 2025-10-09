@@ -13,66 +13,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
-  id              String           @id @default(uuid())
+  id              String             @id @default(uuid())
   profileImage    String?
-  firstName String
-  lastName String
-  username        String           @unique
-  email           String           @unique
+  firstName       String
+  lastName        String
+  username        String             @unique
+  email           String             @unique
   password        String
-  phone           String?          @unique
+  phone           String?            @unique
   bio             String?
   role            Role
-  status          UserStatus       @default(ACTIVE)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  gigsCreated     Gig[]            @relation("GigCreator")
-  gigsAccepted    Gig[]            @relation("GigAccepter")
-  GigApplication  GigApplication[]
-  Notification    Notification[]
+  status          UserStatus         @default(ACTIVE)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relationships
+  questsCreated   Quest[]            @relation("QuestCreator")
+  questsAccepted  Quest[]            @relation("QuestAccepter")
+  questApplications QuestApplication[]
+  notifications   Notification[]
+  ratingsGiven    Rating[]           @relation("Rater")
+  ratingsReceived Rating[]           @relation("Rated")
+  transactionsAsPayer    Transaction[] @relation("Payer")
+  transactionsAsReceiver Transaction[] @relation("Receiver")
+  skills          UserSkill[]
+  questProgress   QuestProgress?
+  badgeAssignments BadgeAssignment[]
 }
 
-model Gig {
-  id          String    @id @default(uuid())
+model Quest {
+  id          String        @id @default(uuid())
   title       String
   description String
   price       Int
   latitude    Float?
   longitude   Float?
-  type        GigType
-  status      GigStatus @default(OPEN)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  type        QuestType
+  status      QuestStatus   @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  createdBy User   @relation("GigCreator", fields: [giverId], references: [id])
-  giverId   String
+  // Relations
+  createdBy   User          @relation("QuestCreator", fields: [giverId], references: [id])
+  giverId     String
 
-  acceptedBy User?   @relation("GigAccepter", fields: [seekerId], references: [id])
-  seekerId   String?
+  acceptedBy  User?         @relation("QuestAccepter", fields: [seekerId], references: [id])
+  seekerId    String?
 
-  GigApplication GigApplication[]
+  applications QuestApplication[]
+  ratings      Rating[]
+  transaction  Transaction?
 }
 
-model GigApplication {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+model QuestApplication {
+  id        String           @id @default(uuid())
+  createdAt DateTime         @default(now())
 
-  gig   Gig    @relation(fields: [gigId], references: [id])
-  gigId String
+  quest     Quest            @relation(fields: [questId], references: [id])
+  questId   String
 
-  seeker   User   @relation(fields: [seekerId], references: [id])
-  seekerId String
+  seeker    User             @relation(fields: [seekerId], references: [id])
+  seekerId  String
 
-  status ApplicationStatus @default(PENDING)
+  status    ApplicationStatus @default(PENDING)
 }
 
 model Rating {
   id        String   @id @default(uuid())
-  rating    Float?
+  rating    Float
   comment   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  questId   String
+  quest     Quest    @relation(fields: [questId], references: [id])
+
+  raterId   String
+  rater     User     @relation("Rater", fields: [raterId], references: [id])
+
+  ratedId   String
+  rated     User     @relation("Rated", fields: [ratedId], references: [id])
 }
 
 model Notification {
@@ -84,6 +105,65 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  questId     String   @unique
+  quest       Quest    @relation(fields: [questId], references: [id])
+  payerId     String
+  receiverId  String
+  payer       User     @relation("Payer", fields: [payerId], references: [id])
+  receiver    User     @relation("Receiver", fields: [receiverId], references: [id])
+  amount      Int
+  status      TransactionStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+}
+
+model QuestProgress {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  xp         Int      @default(0)
+  level      Int      @default(1)
+  updatedAt  DateTime @updatedAt
+  badgeAssignments BadgeAssignment[]
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  icon        String?
+  criteria    String? 
+  createdAt   DateTime @default(now())
+  badgeAssignments BadgeAssignment[]
+}
+
+model BadgeAssignment {
+  id          String   @id @default(uuid())
+  badgeId     String
+  userId      String
+  assignedAt  DateTime @default(now())
+  badge       Badge    @relation(fields: [badgeId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  QuestProgress QuestProgress[]
+}
+
+model Skill {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     UserSkill[]
+}
+
+model UserSkill {
+  id        String   @id @default(uuid())
+  userId    String
+  skillId   String
+  level     Int      @default(1) 
+  user      User     @relation(fields: [userId], references: [id])
+  skill     Skill    @relation(fields: [skillId], references: [id])
 }
 
 enum Role {
@@ -98,14 +178,14 @@ enum UserStatus {
   BANNED
 }
 
-enum GigStatus {
+enum QuestStatus {
   OPEN
   ASSIGNED
   COMPLETED
   CANCELLED
 }
 
-enum GigType {
+enum QuestType {
   CLEANING
   COOKING
   GARDENING
@@ -120,4 +200,11 @@ enum ApplicationStatus {
   ACCEPTED
   REJECTED
   CANCELLED
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }

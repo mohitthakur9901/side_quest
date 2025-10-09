@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
+
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UserService } from 'src/user/user.service';
+import { Prisma } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(private readonly userService: UserService) {}
+  create(createAuthDto: Prisma.UserCreateInput) {
+    try {
+      const { email, firstName, lastName, password, role, phone } =
+        createAuthDto;
+    } catch (error) {}
   }
 
   findAll() {
