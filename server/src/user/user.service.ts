@@ -1,62 +1,63 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Response,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import bcrypt from 'bcrypt';
 import { DatabaseService } from 'src/database/database.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { MediaHandlerService } from 'src/media_handler/media_handler.service';
+
+// import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: DatabaseService) {}
-  async create(createUserDto: Prisma.UserCreateInput) {
-    const { email, firstName, lastName, password, role, phone, username } =
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly media_handler: MediaHandlerService,
+  ) {}
+
+  async create(createUserDto: CreateUserDto, file?: Express.Multer.File) {
+    const { email, firstName, lastName, password, role, phone, username, bio } =
       createUserDto;
+
     try {
-      const user = await this.prisma.user.findFirst({
+      const existingUser = await this.prisma.user.findFirst({
         where: {
-          email: email,
-          phone: phone,
+          OR: [{ email }, { phone }],
         },
       });
-      if (user) {
+
+      if (existingUser) {
         throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
       }
+      // hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      let profileImageUrl: string | null = null;
+      if (file?.path) {
+        const uploadResult = await this.media_handler.uploadFileToClodinary(
+          file.path,
+        );
+        profileImageUrl = uploadResult?.secure_url || null;
+      }
+
       const newUser = await this.prisma.user.create({
         data: {
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          password: password,
-          role: role,
-          phone: phone,
-          username: username,
+          email,
+          firstName,
+          lastName,
+          password: hashedPassword,
+          role,
+          phone,
+          username,
+          bio,
+          profileImage: profileImageUrl,
         },
       });
+
       return {
         message: 'User created successfully',
         user: newUser,
       };
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
-
     }
-  }
-
-  findAll() {
-    return `This action returns all user`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  update(id: number, updateUserDto: Prisma.UserUpdateInput) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
   }
 }
