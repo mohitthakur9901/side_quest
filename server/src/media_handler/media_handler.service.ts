@@ -4,6 +4,7 @@ import fs from 'fs';
 @Injectable()
 export class MediaHandlerService {
   async uploadFileToClodinary(imagePath: string) {
+    
     try {
       if (!imagePath) {
         return;
