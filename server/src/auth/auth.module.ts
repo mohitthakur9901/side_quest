@@ -5,9 +5,15 @@ import { UserModule } from 'src/user/user.module';
 import { MediaHandlerModule } from 'src/media_handler/media_handler.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { NotificationHandlerModule } from 'src/notification_handler/notification_handler.module';
-
+import { JwtModule } from '@nestjs/jwt';
 @Module({
-  imports: [UserModule  , MediaHandlerModule , DatabaseModule , NotificationHandlerModule],
+  imports: [UserModule  , MediaHandlerModule , DatabaseModule , NotificationHandlerModule , 
+    JwtModule.register({
+
+      secret: process.env.JWT_SECRET ,
+      signOptions: { expiresIn: '15m' },
+    })
+  ],
   controllers: [AuthController],
   providers: [AuthService],
 })
