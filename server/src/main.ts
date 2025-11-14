@@ -5,15 +5,17 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/public/',
   });
 
   config({
-    path: join(__dirname, '..', '.env'),
+    path: join(__dirname,'.env'),
   });
 
   cloudinary.config({
@@ -28,6 +30,16 @@ async function bootstrap() {
     }),
   );
 
+  app.use(cookieParser());
+  app.enableCors({
+    origin: '*',
+    credentials: true
+  })
+
+  
+  // app.setGlobalPrefix('api/v1');
   await app.listen(3000);
+ 
 }
+  
 void bootstrap();

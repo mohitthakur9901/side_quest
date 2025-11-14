@@ -8,81 +8,88 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id              String             @id @default(uuid())
-  profileImage    String?
-  firstName       String
-  lastName        String
-  username        String             @unique
-  email           String             @unique
-  password        String
-  phone           String?            @unique
-  otp             String? 
-  isVerified      Boolean            @default(false)
-  bio             String?
-  role            Role
-  status          UserStatus         @default(ACTIVE)
-  accessToken     String?
-  refreshToken    String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  
+  id           String     @id @default(uuid())
+  profileImage String?
+  firstName    String
+  lastName     String
+  username     String     @unique
+  email        String     @unique
+  password     String
+  phone        String?    @unique
+  latitude     Float?
+  longitude    Float?
+  city         String?
+  country      String?
+  otp          String?
+  isVerified   Boolean    @default(false)
+  bio          String?
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  accessToken  String?
+  refreshToken String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt  
+
   // Relationships
-  questsCreated   Quest[]            @relation("QuestCreator")
-  questsAccepted  Quest[]            @relation("QuestAccepter")
-  questApplications QuestApplication[]
-  notifications   Notification[]
-  ratingsGiven    Rating[]           @relation("Rater")
-  ratingsReceived Rating[]           @relation("Rated")
-  transactionsAsPayer    Transaction[] @relation("Payer")
-  transactionsAsReceiver Transaction[] @relation("Receiver")
-  skills          UserSkill[]
-  questProgress   QuestProgress?
-  badgeAssignments BadgeAssignment[]
+  questsCreated          Quest[]            @relation("QuestCreator")
+  questsAccepted         Quest[]            @relation("QuestAccepter")
+  questApplications      QuestApplication[]
+  notifications          Notification[]
+  ratingsGiven           Rating[]           @relation("Rater")
+  ratingsReceived        Rating[]           @relation("Rated")
+  transactionsAsPayer    Transaction[]      @relation("Payer")
+  transactionsAsReceiver Transaction[]      @relation("Receiver")
+  skills                 UserSkill[]
+  questProgress          QuestProgress?
+  badgeAssignments       BadgeAssignment[]
+  
 }
 
 model Quest {
-  id          String        @id @default(uuid())
+  id          String      @id @default(uuid())
   title       String
   description String
   price       Int
   latitude    Float?
   longitude   Float?
   type        QuestType
-  status      QuestStatus   @default(OPEN)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  status      QuestStatus @default(OPEN)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   // Relations
-  createdBy   User          @relation("QuestCreator", fields: [giverId], references: [id])
-  giverId     String
+  createdBy User   @relation("QuestCreator", fields: [giverId], references: [id])
+  giverId   String
 
-  acceptedBy  User?         @relation("QuestAccepter", fields: [seekerId], references: [id])
-  seekerId    String?
+  acceptedBy User?   @relation("QuestAccepter", fields: [seekerId], references: [id])
+  seekerId   String?
 
+  assignedAt   DateTime?
+  acceptedAt   DateTime?
   applications QuestApplication[]
   ratings      Rating[]
   transaction  Transaction?
 }
 
 model QuestApplication {
-  id        String           @id @default(uuid())
-  createdAt DateTime         @default(now())
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
 
-  quest     Quest            @relation(fields: [questId], references: [id])
-  questId   String
+  quest   Quest  @relation(fields: [questId], references: [id])
+  questId String
 
-  seeker    User             @relation(fields: [seekerId], references: [id])
-  seekerId  String
+  seeker   User   @relation(fields: [seekerId], references: [id])
+  seekerId String
 
-  status    ApplicationStatus @default(PENDING)
+  isFirstAccepted Boolean           @default(false) // who got it first
+  responseTime    Int?                              // milliseconds/seconds between showing and selecting
+  status          ApplicationStatus @default(PENDING)
 }
 
 model Rating {
@@ -91,14 +98,14 @@ model Rating {
   comment   String?
   createdAt DateTime @default(now())
 
-  questId   String
-  quest     Quest    @relation(fields: [questId], references: [id])
+  questId String
+  quest   Quest  @relation(fields: [questId], references: [id])
 
-  raterId   String
-  rater     User     @relation("Rater", fields: [raterId], references: [id])
+  raterId String
+  rater   User   @relation("Rater", fields: [raterId], references: [id])
 
-  ratedId   String
-  rated     User     @relation("Rated", fields: [ratedId], references: [id])
+  ratedId String
+  rated   User   @relation("Rated", fields: [ratedId], references: [id])
 }
 
 model Notification {
@@ -113,64 +120,63 @@ model Notification {
 }
 
 model Transaction {
-  id          String   @id @default(uuid())
-  questId     String   @unique
-  quest       Quest    @relation(fields: [questId], references: [id])
-  payerId     String
-  receiverId  String
-  payer       User     @relation("Payer", fields: [payerId], references: [id])
-  receiver    User     @relation("Receiver", fields: [receiverId], references: [id])
-  amount      Int
-  status      TransactionStatus @default(PENDING)
-  createdAt   DateTime @default(now())
+  id         String            @id @default(uuid())
+  questId    String            @unique
+  quest      Quest             @relation(fields: [questId], references: [id])
+  payerId    String
+  receiverId String
+  payer      User              @relation("Payer", fields: [payerId], references: [id])
+  receiver   User              @relation("Receiver", fields: [receiverId], references: [id])
+  amount     Int
+  status     TransactionStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
 }
 
 model QuestProgress {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id])
-  xp         Int      @default(0)
-  level      Int      @default(1)
-  updatedAt  DateTime @updatedAt
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id])
+  xp               Int               @default(0)
+  level            Int               @default(1)
+  updatedAt        DateTime          @updatedAt
   badgeAssignments BadgeAssignment[]
 }
 
 model Badge {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  icon        String?
-  criteria    String? 
-  createdAt   DateTime @default(now())
+  id               String            @id @default(uuid())
+  name             String
+  description      String
+  icon             String?
+  criteria         String?
+  createdAt        DateTime          @default(now())
   badgeAssignments BadgeAssignment[]
 }
 
 model BadgeAssignment {
-  id          String   @id @default(uuid())
-  badgeId     String
-  userId      String
-  assignedAt  DateTime @default(now())
-  badge       Badge    @relation(fields: [badgeId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  id         String   @id @default(uuid())
+  badgeId    String
+  userId     String
+  assignedAt DateTime @default(now())
+  badge      Badge    @relation(fields: [badgeId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   QuestProgress QuestProgress[]
 }
 
 model Skill {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  users     UserSkill[]
+  id    String      @id @default(uuid())
+  name  String      @unique
+  users UserSkill[]
 }
 
 model UserSkill {
-  id        String   @id @default(uuid())
-  userId    String
-  skillId   String
-  level     Int      @default(1) 
-  user      User     @relation(fields: [userId], references: [id])
-  skill     Skill    @relation(fields: [skillId], references: [id])
+  id      String @id @default(uuid())
+  userId  String
+  skillId String
+  level   Int    @default(1)
+  user    User   @relation(fields: [userId], references: [id])
+  skill   Skill  @relation(fields: [skillId], references: [id])
 }
-
 
 enum Role {
   GIVER

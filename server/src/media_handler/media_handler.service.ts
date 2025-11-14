@@ -12,9 +12,10 @@ export class MediaHandlerService {
       const res = await cloudinary.uploader.upload(imagePath, {
         resource_type: 'auto',
       });
-      fs.unlinkSync(imagePath);
+      fs.unlinkSync(imagePath);      
       return res;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      
     } catch (error) {
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       console.error('Cloudinary upload error:', error);

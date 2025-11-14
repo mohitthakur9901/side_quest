@@ -38,4 +38,20 @@ export class CreateAuthDto {
   @IsOptional()
   @IsString()
   profileImage?: string;
+
+  
+  @IsString()
+  latitude?: string;
+
+ 
+  @IsString()
+  longitude?: string;
+
+ 
+  @IsString()
+  city?: string;
+
+ 
+  @IsString()
+  country?: string;
 }
