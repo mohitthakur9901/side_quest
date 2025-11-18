@@ -31,9 +31,7 @@ export class CreateAuthDto {
   @IsString()
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  bio?: string;
+
 
   @IsOptional()
   @IsString()

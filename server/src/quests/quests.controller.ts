@@ -7,15 +7,12 @@ import { UpdateQuestDto } from './dto/update-quest.dto';
 export class QuestsController {
   constructor(private readonly questsService: QuestsService) {}
 
-  @Post()
+  @Post("create")
   create(@Body() createQuestDto: CreateQuestDto) {
     return this.questsService.create(createQuestDto);
   }
 
-  @Get()
-  findAll(@Query() query: any) {
-    return this.questsService.findAll(query);
-  }
+  
 
   @Get(':id')
   findOne(@Param('id') id: string) {

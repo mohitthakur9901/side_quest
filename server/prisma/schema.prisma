@@ -30,7 +30,7 @@ model User {
   isVerified   Boolean    @default(false)
   bio          String?
   role         Role
-  status       UserStatus @default(ACTIVE)
+  status       UserStatus @default(INACTIVE)
   accessToken  String?
   refreshToken String?
   createdAt    DateTime   @default(now())

@@ -16,6 +16,8 @@ export class QuestsService {
 
   async create(createQuestDto: CreateQuestDto) {
     try {
+      console.log(createQuestDto);
+      
       // validate fields 
       const { title, description, price, latitude, longitude, type, status, giverId } = createQuestDto
       if (!title || !description || !price || !latitude || !longitude || !type || !status || !giverId) {
@@ -63,23 +65,6 @@ export class QuestsService {
     }
   }
 
-  async findAll(query: any) {
-    try {
-      const { status, giverId } = query;
-      const quests = await this.prisma.quest.findMany({
-        where: {
-          id: giverId,
-          status: status || 'OPEN'
-        }
-      })
-      if (!quests) {
-        throw new Error('No quests found')
-      }
-      return quests
-    } catch (error) {
-      return error
-    }
-  }
 
   async findOne(giverId: string) {
     try {
@@ -100,6 +85,8 @@ export class QuestsService {
 
   async update(id: string, updateQuestDto: UpdateQuestDto) {
     try {
+
+      // update then find in redis then upate that as well
       const quest = await this.prisma.quest.update({
         where: {
           id: id
@@ -132,6 +119,26 @@ export class QuestsService {
         message: 'Quest cancelled successfully',
         status: HttpStatus.OK
       }
+    } catch (error) {
+      return error
+    }
+  }
+
+
+  //  admin only
+    async findAll(query: any) {
+    try {
+      const { status, giverId } = query;
+      const quests = await this.prisma.quest.findMany({
+        where: {
+          id: giverId,
+          status: status || 'OPEN'
+        }
+      })
+      if (!quests) {
+        throw new Error('No quests found')
+      }
+      return quests
     } catch (error) {
       return error
     }

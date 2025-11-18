@@ -14,12 +14,15 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { Role } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
 
+
+  @Post('/updateProfileImage/:id')
   @UseInterceptors(FileInterceptor('profileImage', {
     storage: diskStorage({
       destination: './public/temp',
@@ -48,11 +51,7 @@ export class UserController {
   getUser(@Param('id') id: string) {
     return this.userService.getUserById(id);
   }
-  // for admin only
-  @Get("/get")
-  getUsers(@Query() query: string) {
-    return this.userService.getUsers(query);
-  }
+  
 
   @Patch(':id/status')
   async updateStatus(
@@ -62,8 +61,23 @@ export class UserController {
     return this.userService.updateStatus(id, status);
   }
 
+
+  // for admin only
+
+
+  
+  @Get("/get")
+  getUsers(@Query() query: string) {
+    return this.userService.getUsers(query);
+  }
+  @Patch(':id/ban')
   async banUser(@Param('id') id: string) {
     return this.userService.banUser(id);
+  }
+
+  @Patch(':id/role')
+  async upateUser(@Param('id') id: string, @Body('role') role: Role) {
+    return this.userService.updateUserRole(id, role);
   }
 
 }

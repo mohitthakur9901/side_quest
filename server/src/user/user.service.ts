@@ -4,6 +4,7 @@ import { MediaHandlerService } from 'src/media_handler/media_handler.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PoolsService } from 'src/pools/pools.service';
 import bcrypt from 'bcrypt';
+import { Role } from '@prisma/client';
 
 
 @Injectable()
@@ -129,46 +130,54 @@ export class UserService {
     }
   }
 
-
   // update user status for polling
   async updateStatus(id: string, status: 'ACTIVE' | 'INACTIVE') {
     try {
-      const updatedUser = await this.prisma.user.update({
+      // Ensure the user exists and is a SEEKER
+      const user = await this.prisma.user.findUnique({
         where: { id },
-        data: { status },
       });
 
-      if (status === 'ACTIVE') {
+      if (!user || user.role !== 'SEEKER') {
+        throw new HttpException('Only seekers can update status', HttpStatus.BAD_REQUEST);
+      }
 
-        // Validate location before adding to pool
-        if (
-          !updatedUser.city ||
-          updatedUser.latitude === null ||
-          updatedUser.longitude === null
-        ) {
+      // If setting ACTIVE → validate before updating pool
+      if (status === 'ACTIVE') {
+        if (!user.city || user.latitude === null || user.longitude === null) {
           throw new HttpException(
-            'User must have valid city, latitude, and longitude to become ACTIVE',
+            'Seeker must have valid city, latitude, and longitude',
             HttpStatus.BAD_REQUEST,
           );
         }
 
         await this.poolsService.addUserToPool({
           userId: id,
-          city: updatedUser.city,
-          latitude: updatedUser.latitude,
-          longitude: updatedUser.longitude,
+          city: user.city,
+          latitude: user.latitude,
+          longitude: user.longitude,
         });
 
-        console.log(`User ${id} is now active — added to pool`);
-        
+        console.log(`User ${id} activated -> Added to pool`);
       }
 
+      // If setting INACTIVE → remove from pool
       if (status === 'INACTIVE') {
         await this.poolsService.removeUserFromPool(id);
-        console.log(`User ${id} is now inactive — removed from pool`);
+        console.log(`User ${id} deactivated -> Removed from pool`);
       }
-      
-      return { message: 'User status updated successfully' };
+
+      // Update user status in database
+      const updated = await this.prisma.user.update({
+        where: { id },
+        data: { status },
+      });
+
+      return {
+        message: 'User status updated successfully',
+        status: updated.status,
+      };
+
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
@@ -222,5 +231,19 @@ export class UserService {
     }
   }
 
-
+  async updateUserRole(id: string, role: Role) {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id },
+        data: {
+          role: role
+        },
+      });
+      return {
+        message: 'User role updated successfully',
+      }
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
 }

@@ -10,6 +10,9 @@ import { QuestsModule } from './quests/quests.module';
 import { UserController } from './user/user.controller';
 import { AuthMiddleware } from './auth.middleware';
 import { PoolsModule } from './pools/pools.module';
+import { CommunicationsModule } from './communications/communications.module';
+import { QuestsController } from './quests/quests.controller';
+import { PoolsGateway } from './pools/pools.gateway';
 
 @Module({
   imports: [
@@ -20,6 +23,7 @@ import { PoolsModule } from './pools/pools.module';
     NotificationHandlerModule,
     QuestsModule,
     PoolsModule,
+    CommunicationsModule,
   ],
   controllers: [AppController, UserController],
   providers: [AppService],
@@ -28,7 +32,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .forRoutes(AppController, UserController);
+      .forRoutes(AppController, UserController , QuestsController, PoolsGateway);
   }
 
 }

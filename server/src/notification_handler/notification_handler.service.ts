@@ -8,14 +8,9 @@ export class NotificationHandlerService {
   generateOtp() {
     return Math.floor(100000 + Math.random() * 900000);
   }
-
-
-
+  
   async sendNotificationToUser(email: string, subject: string, text: string) {
     try {
-
-      const otp = this.generateOtp();
-
       const { error, data } = await resend.emails.send({
         from: "Acme <onboarding@resend.dev>",
         to: email,
@@ -69,4 +64,16 @@ export class NotificationHandlerService {
 
     }
   }
+
+
+  // real time application notification which require a push notification
+  /*
+
+
+
+  */
+
+
+
+
 }

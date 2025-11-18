@@ -2,30 +2,41 @@ import { HttpException, HttpStatus, Injectable, OnModuleDestroy } from '@nestjs/
 import { CreatePoolDto } from './dto/create-pool.dto';
 import { Redis } from 'ioredis';
 import { CreateQuestPoolDto } from './dto/create-quest-pool.dto';
-import { PoolsGateway } from './pools.gateway';
+import { PoolsEventsService } from './pools-events.service';
 
 @Injectable()
 export class PoolsService implements OnModuleDestroy {
 
   public readonly client: Redis;
+  registerSocket: any;
 
   constructor(
-    private readonly gateway: PoolsGateway
+    private readonly events: PoolsEventsService
+
   ) {
+
     this.client = new Redis({
+
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
       password: process.env.REDIS_PASSWORD || undefined,
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+
     });
+
     this.client.on('error', (err) => console.log(err));
+
     this.client.on('connect', () => console.log('✅ Connected to Redis'));
+
   };
 
   onModuleDestroy() {
     this.client.quit();
   };
+
+
+
 
   async addUserToPool(createPoolDto: CreatePoolDto) {
     const { city, latitude, longitude, userId } = createPoolDto;
@@ -54,12 +65,20 @@ export class PoolsService implements OnModuleDestroy {
     }
   }
 
+
+  async addQuestInStream(createPoolDto : CreateQuestPoolDto) {
+    const { description, price, quest_id, title, city, latitude, longitude } = createPoolDto;
+
+    
+  }
+
   async addQuestToPool(addQuestDto: CreateQuestPoolDto) {
     try {
       const { description, price, quest_id, title, city, latitude, longitude } = addQuestDto;
       if (!description || !price || !quest_id || !title || !city || !latitude || !longitude) {
         throw new HttpException('All fields are required', HttpStatus.BAD_REQUEST);
       }
+      
 
       await this.client.geoadd('quests:geo', longitude, latitude, quest_id);
 
@@ -140,7 +159,7 @@ export class PoolsService implements OnModuleDestroy {
             if (!socketId) continue;
 
             // Emit via websocket gateway → MUST INJECT GATEWAY INTO SERVICE
-            this.gateway.server.to(socketId).emit('newQuest', {
+            this.events.emitToUser(socketId, 'newQuest', {
               questId,
               title: quest.title,
               price: quest.price,
@@ -160,6 +179,7 @@ export class PoolsService implements OnModuleDestroy {
   }
 
   calculateDistance(arg0: number, arg1: number, arg2: number, arg3: number) {
+
     const R = 6371;
     const dLat = (arg3 - arg1) * (Math.PI / 180);
     const dLon = (arg2 - arg0) * (Math.PI / 180);
@@ -172,6 +192,16 @@ export class PoolsService implements OnModuleDestroy {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     return distance;
+
   }
+
+  // admin only
+  async getUsersFromPool() {
+    return await this.client.zrange('seekers:geo', 0, -1);
+  }
+  async getQuestsFromPool() {
+    return await this.client.zrange('quests:geo', 0, -1);
+  }
+
 
 }

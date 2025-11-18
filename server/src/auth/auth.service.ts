@@ -44,7 +44,7 @@ export class AuthService {
   }
   async create(createUserDto: CreateAuthDto, profileImage?: Express.Multer.File) {
     const { email, firstName, lastName, password, role, phone,
-      username, bio, latitude, longitude, city, country } = createUserDto;
+      username, latitude, longitude, city, country } = createUserDto;
 
     try {
       // validate user if exists
@@ -59,7 +59,7 @@ export class AuthService {
       }
       // validate user data 
       if (!email || !firstName || !lastName || !password || !phone || !username ||
-        !role || !bio || !latitude || !longitude || !city || !country) {
+        !role || !latitude || !longitude || !city || !country) {
         throw new HttpException('Missing user data', HttpStatus.BAD_REQUEST);
       }
       // hash password
@@ -84,7 +84,6 @@ export class AuthService {
           password: hashedPassword,
           phone,
           username,
-          bio,
           role,
           profileImage: profileImageUrl,
           city,
@@ -98,6 +97,9 @@ export class AuthService {
         "You Just Signed Up into the App",
         "Welcome to the app, your account has been created successfully you can login now and start using the app");
 
+        return {
+          message : "User created successfully"
+        }
     } catch (error) {
       return console.error({ error });
     }
@@ -133,7 +135,12 @@ export class AuthService {
         phone: user.phone,
         bio: user.bio,
         role: user.role,
-        profileImage: user.profileImage
+        profileImage: user.profileImage,
+        status: user.status,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        city: user.city,
+        country: user.country
       }
 
       // send notification to user for login
@@ -184,7 +191,8 @@ export class AuthService {
       throw new UnauthorizedException('Token refresh failed');
     }
   }
-  // login with google 
+
+  // login with google use clerk 
   async loginWithGoogle() {
     try {
       return { message: 'Login with Google successful' };
